@@ -1,10 +1,20 @@
 use std::collections::HashMap;
+use std::env;
+use std::fs::File;
 use std::io::{self, BufReader};
 use std::io::prelude::*;
-use std::fs::File;
+use std::path::PathBuf;
+
+const PROJECT: &str = "file-bufread";
 
 fn main() -> io::Result<()> {
-    let f = File::open("/home/pi/rust/file-bufread/log.txt")?;
+    let home_str = env::var("HOME").unwrap();
+    let mut home_path = PathBuf::from(home_str);
+    //~ println!("{:?}", home_path);
+    
+    home_path.push(PROJECT);
+    home_path.push("log.txt");
+    let f = File::open(home_path.to_str().unwrap())?;
     let mut f = BufReader::new(f);
     
     let per_ip = req_per_ip(&mut f);
@@ -13,6 +23,7 @@ fn main() -> io::Result<()> {
     
     println!("IP: # of requests");
     print_map(&per_ip_vec, 10);
+    println!("-----------------");
     
     let per_uri = req_per_uri(&mut f);
     let mut per_uri_vec: Vec<_> = per_uri.iter().collect();
@@ -20,7 +31,7 @@ fn main() -> io::Result<()> {
     
     println!("URI: # of requests");
     print_map(&per_uri_vec, 10);
-    //~ print_map(&per_uri_vec, 2);
+    println!("-----------------");
 
     Ok(())
 }
@@ -30,16 +41,14 @@ fn req_per_ip(buf: &mut BufReader<File>) -> HashMap<String, u32> {
     buf.seek(io::SeekFrom::Start(0)).unwrap();
     
     for line in buf.by_ref().lines() {
-        for (field_i, field) in line.unwrap().split(' ').enumerate() {
-            if field_i == 0 {
-                match out.get_mut(field) {
-                    Some(v) => *v += 1,
-                    None => {
-                        out.insert(field.to_string(), 1);
-                        ()
-                    },
-                }
-            }
+        let line_c = line.unwrap();
+        let field = line_c.split(' ').nth(0).unwrap();
+        match out.get_mut(field) {
+            Some(v) => *v += 1,
+            None => {
+                out.insert(field.to_string(), 1);
+                ()
+            },
         }
     }
     out
@@ -50,16 +59,14 @@ fn req_per_uri(buf: &mut BufReader<File>) -> HashMap<String, u32> {
     buf.seek(io::SeekFrom::Start(0)).unwrap();
     
     for line in buf.by_ref().lines() {
-        for (field_i, field) in line.unwrap().split(' ').enumerate() {
-            if field_i == 6 {
-                match out.get_mut(field) {
-                    Some(v) => *v += 1,
-                    None => {
-                        out.insert(field.to_string(), 1);
-                        ()
-                    },
-                }
-            }
+        let line_c = line.unwrap();
+        let field = line_c.split(' ').nth(6).unwrap();
+        match out.get_mut(field) {
+            Some(v) => *v += 1,
+            None => {
+                out.insert(field.to_string(), 1);
+                ()
+            },
         }
     }
     out
